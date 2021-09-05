@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL;
 
-use Closure;
 use cooldogedev\libPromise\PromisePool;
 use cooldogedev\libPromise\thread\ThreadedPromise;
 use cooldogedev\libSQL\constant\DataProviderConstants;
