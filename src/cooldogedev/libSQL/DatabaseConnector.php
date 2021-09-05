@@ -64,7 +64,7 @@ class DatabaseConnector
         return $this->plugin;
     }
 
-    public function submitQuery(SQLQuery $query, ?string $table = null, ?Closure $onSuccess = null, ?Closure $onFailure = null): void
+    public function submitQuery(SQLQuery $query, ?string $table = null, bool $appendToPool = true): ThreadedPromise
     {
         $query->setTable($table);
 
@@ -74,13 +74,14 @@ class DatabaseConnector
             function () use ($query): mixed {
                 $connection = $query->run();
                 return $query->handleIncomingConnection($connection);
-            },
-            $onSuccess
+            }
         );
 
-        $onFailure && $promise->catch($onFailure);
+        if ($appendToPool) {
+            $this->getPromisePool()->addPromise($promise);
+        }
 
-        $this->getPromisePool()->addPromise($promise);
+        return $promise;
     }
 
     public function getDataProvider(): DataProvider
