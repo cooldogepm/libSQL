@@ -77,7 +77,7 @@ class DatabaseConnector
         );
 
         if ($appendToPool) {
-            $this->getPromisePool()->addPromise($promise);
+            $this->getPromisePool()->addPromise($promise, true);
         }
 
         return $promise;
