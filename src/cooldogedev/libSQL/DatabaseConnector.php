@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL;
 
+use Closure;
 use cooldogedev\libPromise\PromisePool;
 use cooldogedev\libPromise\thread\ThreadedPromise;
 use cooldogedev\libSQL\constant\DataProviderConstants;
@@ -63,22 +64,39 @@ class DatabaseConnector
         return $this->plugin;
     }
 
-    public function submitQuery(SQLQuery $query, ?string $table = null, bool $appendToPool = true): ThreadedPromise
+    public function submitQuery(
+        SQLQuery $query,
+        ?string $table = null,
+        bool $appendToPool = true,
+        ?Closure $onSuccess = null,
+        ?Closure $onError = null
+    ): ?ThreadedPromise
+    {
+        $promise = $this->generateQuery($query, $table, $onSuccess, $onError);
+
+        $querySuccessfullyAppended = false;
+
+        if ($appendToPool) {
+            $querySuccessfullyAppended = $this->appendQueryToPool($promise);
+        }
+
+        return !$appendToPool || ($querySuccessfullyAppended) ? $promise : null;
+    }
+
+    public function generateQuery(SQLQuery $query, ?string $table = null, ?Closure $onSuccess = null, ?Closure $onError = null): ThreadedPromise
     {
         $query->setTable($table);
-
         $this->getDataProvider()->handleQuerySubmission($query);
 
         $promise = new ThreadedPromise(
             function () use ($query): mixed {
                 $connection = $query->run();
                 return $query->handleIncomingConnection($connection);
-            }
+            },
+            $onSuccess
         );
 
-        if ($appendToPool) {
-            $this->getPromisePool()->addPromise($promise, true);
-        }
+        $onError && $promise->catch($onError);
 
         return $promise;
     }
@@ -93,7 +111,12 @@ class DatabaseConnector
         $this->dataProvider = $dataProvider;
     }
 
-    public function getPromisePool(): PromisePool
+    public function appendQueryToPool(ThreadedPromise $query): bool
+    {
+        return $this->getPromisePool()->addPromise($query);
+    }
+
+    protected function getPromisePool(): PromisePool
     {
         return $this->promisePool;
     }
