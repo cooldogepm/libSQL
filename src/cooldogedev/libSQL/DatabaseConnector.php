@@ -113,7 +113,7 @@ class DatabaseConnector
 
     public function appendQueryToPool(ThreadedPromise $query): bool
     {
-        return $this->getPromisePool()->addPromise($query);
+        return $this->getPromisePool()->addPromise($query, $query->getOnCompletion() !== null);
     }
 
     protected function getPromisePool(): PromisePool
