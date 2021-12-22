@@ -9,5 +9,5 @@ projects:
     type: library
     libs:
       - src: cooldogedev/libPromise/libPromise
-        version: ^0.0.5
+        version: ^0.0.6
 ...
