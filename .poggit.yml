@@ -7,7 +7,4 @@ projects:
     path: ""
     model: virion
     type: library
-    libs:
-      - src: cooldogedev/libPromise/libPromise
-        version: ^0.0.5
 ...

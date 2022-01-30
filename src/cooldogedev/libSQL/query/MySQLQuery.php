@@ -26,18 +26,9 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\query;
 
-use cooldogedev\libSQL\interfaces\MySQLCredentialsHolder;
-use cooldogedev\libSQL\traits\MySQLCredentialsHolderTrait;
 use mysqli;
 
-abstract class MySQLQuery extends SQLQuery implements MySQLCredentialsHolder
+abstract class MySQLQuery extends SQLQuery
 {
-    use MySQLCredentialsHolderTrait;
-
-    final public function establishConnection(): mysqli
-    {
-        return new mysqli($this->getHost(), $this->getUsername(), $this->getPassword(), $this->getSchema(), $this->getPort());
-    }
-
-    abstract public function handleIncomingConnection(mysqli $connection): mixed;
+    abstract public function onRun(mysqli $connection): void;
 }

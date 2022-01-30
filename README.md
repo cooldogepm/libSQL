@@ -34,20 +34,20 @@ your_plugin
 ### Retrieve all customer records
 
 ```php
-$connector = new DatabaseConnector($this,
+$pool = new ConnectionPool($this,
     [
         "provider" => "sqlite",
         "sqlite" => [
-            "data-file" => "test.db"
+            "file" => "test.db"
         ]
     ]
 );
 
 $query = new class extends SQLiteQuery {
 
-    public function handleIncomingConnection(SQLite3 $connection): ?array
+    public function onRun(SQLite3 $connection): void
     {
-        return $connection->query($this->getQuery())?->fetchArray() ?: null;
+        $this->setResult($connection->query($this->getQuery())?->fetchArray() ?: null);
     }
 
     public function getQuery(): string
@@ -56,34 +56,24 @@ $query = new class extends SQLiteQuery {
     }
 };
 
-$connector->submitQuery($query, "customers",
-    function (?array $customers): void {
-        if (!$customers) {
-            echo "No customers found";
-            return;
-        }
-        foreach ($customers as $customer) {
-            echo $customer["name"];
-        }
-    },
-    function (PromiseError $error): void {
-        echo "An error occurred with the message " . $error->getMessage();
-    }
+$pool->submit($query, "customers",
+    context: ClosureContext::create(
+        function (?array $customers): void {
+            if (!$customers) {
+                echo "No customers found";
+                return;
+            }
+            foreach ($customers as $customer) {
+                echo $customer["name"];
+            }
+        },
+    )
 );
 ```
 
 ### Create a new customer record
 
 ```php
-$connector = new DatabaseConnector($this,
-    [
-        "provider" => "sqlite",
-        "sqlite" => [
-            "data-file" => "test.db"
-        ]
-    ]
-);
-
 $query = new class extends SQLiteQuery {
     public function __construct(
         protected string $name = "John",
@@ -97,7 +87,7 @@ $query = new class extends SQLiteQuery {
 
     public function getAge(): int { return $this->age; }
 
-    public function handleIncomingConnection(SQLite3 $connection): bool
+    public function onRun(SQLite3 $connection): void
     {
         $statement = $connection->prepare($this->getQuery());
         $statement->bindValue(":name", $this->getName());
@@ -105,7 +95,6 @@ $query = new class extends SQLiteQuery {
         $statement->bindValue(":age", $this->getAge());
         $statement->execute();
         $statement->close();
-        return true;
     }
 
     public function getQuery(): string
@@ -114,13 +103,12 @@ $query = new class extends SQLiteQuery {
     }
 };
 
-$connector->submitQuery($query, "customers",
-    function (): void {
-        echo "Successfully created a new record!";
-    },
-    function (PromiseError $error): void {
-        echo "An error occurred with the message " . $error->getMessage();
-    }
+$pool->submit($query, "customers",
+    context: ClosureContext::create(
+        function (): void {
+            echo "Successfully created a new customer record";
+        },
+    )
 );
 ```
 

@@ -26,18 +26,9 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\query;
 
-use cooldogedev\libSQL\interfaces\SQLiteDataFileHolder;
-use cooldogedev\libSQL\traits\SQLiteDataFileHolderTrait;
 use SQLite3;
 
-abstract class SQLiteQuery extends SQLQuery implements SQLiteDataFileHolder
+abstract class SQLiteQuery extends SQLQuery
 {
-    use SQLiteDataFileHolderTrait;
-
-    final public function establishConnection(): SQLite3
-    {
-        return new SQLite3($this->getDataPath() . $this->getDataFile());
-    }
-
-    abstract public function handleIncomingConnection(SQLite3 $connection): mixed;
+    abstract public function onRun(SQLite3 $connection): void;
 }

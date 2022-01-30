@@ -24,10 +24,30 @@
 
 declare(strict_types=1);
 
-namespace cooldogedev\libSQL\provider;
+namespace cooldogedev\libSQL\traits;
 
-use cooldogedev\libSQL\interfaces\MySQLCredentialsHolder;
-
-interface MySQLDataProvider extends DataProvider, MySQLCredentialsHolder
+trait SQLiteFileHolderTrait
 {
+    protected string $path;
+    protected string $file;
+
+    public function getPath(): string
+    {
+        return $this->path;
+    }
+
+    public function setPath(string $path): void
+    {
+        $this->path = $path;
+    }
+
+    public function getFile(): string
+    {
+        return $this->file;
+    }
+
+    public function setFile(string $file): void
+    {
+        $this->file = $file;
+    }
 }

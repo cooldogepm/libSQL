@@ -24,10 +24,15 @@
 
 declare(strict_types=1);
 
-namespace cooldogedev\libSQL\provider;
+namespace cooldogedev\libSQL\interfaces;
 
-use cooldogedev\libSQL\interfaces\SQLiteDataFileHolder;
-
-interface SQLiteDataProvider extends DataProvider, SQLiteDataFileHolder
+interface SQLiteFileHolder
 {
+    public function getPath(): string;
+
+    public function setPath(string $path): void;
+
+    public function getFile(): string;
+
+    public function setFile(string $file): void;
 }

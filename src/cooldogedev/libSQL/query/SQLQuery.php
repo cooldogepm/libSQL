@@ -26,27 +26,66 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\query;
 
-use mysqli;
-use SQLite3;
+use cooldogedev\libSQL\context\ClosureContext;
 use Threaded;
 
 abstract class SQLQuery extends Threaded
 {
-    protected ?string $table;
+    public const SERIALIZABLE_DATA_TYPES = [
+        "array" => true,
+        "object" => true,
+    ];
 
-    public function __construct()
+    protected ?ClosureContext $closureContext = null;
+    protected ?string $table = null;
+    protected bool $finished = false;
+    protected mixed $result = null;
+    protected bool $serialized = false;
+
+    public function getClosureContext(): ?ClosureContext
     {
-        $this->table = null;
+        return $this->closureContext;
     }
 
-    final public function run(): mysqli|SQLite3
+    public function setClosureContext(?ClosureContext $closureContext): void
     {
-        return $this->establishConnection();
+        $this->closureContext = $closureContext;
     }
 
-    abstract public function establishConnection(): mysqli|SQLite3;
+    public function isFinished(): bool
+    {
+        return $this->finished;
+    }
 
-    abstract public function getQuery(): string;
+    public function setFinished(bool $finished): void
+    {
+        $this->finished = $finished;
+    }
+
+    public function getResult(): mixed
+    {
+        return $this->isSerialized() ? unserialize($this->result) : $this->result;
+    }
+
+    public function setResult(mixed $result): void
+    {
+        if (isset(SQLQuery::SERIALIZABLE_DATA_TYPES[gettype($result)])) {
+            $this->result = serialize($result);
+            $this->setSerialized(true);
+        } else {
+            $this->result = $result;
+        }
+    }
+
+    public function isSerialized(): bool
+    {
+        return $this->serialized;
+    }
+
+    public function setSerialized(bool $serialized): void
+    {
+        $this->serialized = $serialized;
+    }
 
     public function getTable(): ?string
     {
