@@ -40,6 +40,9 @@ final class ConnectionPool
     public const DATA_PROVIDER_MYSQL = "mysql";
     public const DATA_PROVIDER_SQLITE = "sqlite";
 
+    /**
+     * @var SQLThread[]
+     */
     protected array $threads;
     /**
      * @var SQLQuery[][]
@@ -49,6 +52,7 @@ final class ConnectionPool
     public function __construct(protected PluginBase $plugin, array $databaseConfig)
     {
         $this->threads = [];
+        $this->refs = [];
 
         switch ($databaseConfig["provider"]) {
             case ConnectionPool::DATA_PROVIDER_MYSQL:
@@ -80,12 +84,12 @@ final class ConnectionPool
 
                 $context = $ref->getClosureContext();
 
-                if (!$context) {
-                    continue;
+                $thread->removeQuery($key);
+
+                if ($context) 
+                    $context->invoke($ref->getResult());
                 }
 
-                $thread->removeQuery($key);
-                $context->invoke($ref->getResult());
                 $this->removeRef($thread->getIndex(), $key);
             }
         });
@@ -135,16 +139,6 @@ final class ConnectionPool
 
         $this->addRef($thread->getIndex(), $query);
         $thread->submitQuery($query);
-
-        $pool = $this;
-
-        $pool->submit($query, "customers",
-            context: ClosureContext::create(
-                function (): void {
-                    echo "Successfully created a new customer record";
-                },
-            )
-        );
 
         return $query;
     }
