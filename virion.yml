@@ -4,4 +4,4 @@ api: [ 4.0.0 ]
 author: cooldogedev
 description: A minimalistic implementation of asynchronous SQL
 php: [ 8.0 ]
-version: 0.0.6
+version: 0.0.7
