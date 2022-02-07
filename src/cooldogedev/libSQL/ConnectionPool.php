@@ -58,7 +58,7 @@ final class ConnectionPool
             case ConnectionPool::DATA_PROVIDER_MYSQL:
                 for ($i = 0; $i < $databaseConfig["threads"]; $i++) {
                     $sleeperNotifier = new SleeperNotifier();
-                    $this->registerThread(new MySQLThread($sleeperNotifier, $i, ... $databaseConfig["mysql"]), $sleeperNotifier);
+                    $this->registerThread(new MySQLThread($sleeperNotifier, $i, $databaseConfig["mysql"]), $sleeperNotifier);
                 }
                 break;
             case ConnectionPool::DATA_PROVIDER_SQLITE:
