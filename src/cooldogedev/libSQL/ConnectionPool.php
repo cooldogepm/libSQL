@@ -86,9 +86,7 @@ final class ConnectionPool
 
                 $thread->removeQuery($key);
 
-                if ($context) 
-                    $context->invoke($ref->getResult());
-                }
+                $context?->invoke($ref->getResult());
 
                 $this->removeRef($thread->getIndex(), $key);
             }
