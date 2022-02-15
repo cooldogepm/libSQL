@@ -64,7 +64,7 @@ final class ClosureContext extends Threaded
 
     public function push(Closure $closure): ClosureContext
     {
-        $this[ClosureContext::CLOSURE_CONTEXT_KEY] = $closure;
+        $this[ClosureContext::CLOSURE_CONTEXT_KEY][]= $closure;
         return $this;
     }
 
