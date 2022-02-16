@@ -160,7 +160,7 @@ final class ConnectionPool
                 continue;
             }
 
-            if (count($freeThread->getQueries()) > count($thread->getQueries()())) {
+            if (count($freeThread->getQueries()) > count($thread->getQueries())) {
                 $freeThread = $thread;
             }
         }
