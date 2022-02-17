@@ -2,33 +2,6 @@
 
 A minimalistic implementation of asynchronous [SQL](https://en.wikipedia.org/wiki/SQL) for PHP.
 
-## Installation via DEVirion
-
-Install the [DEVirion](https://poggit.pmmp.io/ci/poggit/devirion/DEVirion) plugin and start your server. This will create a `virions` folder in your server's root directory.
-
-```
-server_root
-| -> plugins
-|    --> DEVirion.phar
-| -> virions
-```
-
-- Download pre-compiled `.phar` files can be downloaded from [poggit](https://poggit.pmmp.io/ci/cooldogedev/libSQL/libSQL).
-- Place the pre-compiled `.phar` in the `virions` directory
-
-## Running from source code
-
-Clone the repository via git `git clone git@github.com:cooldogedev/libSQL.git`. This will create a `libSQL` folder in your directory.
-
-```
-your_plugin
-| -> src
-|    --> cooldogedev
-|       --> libSQL
-```
-
-- Place the `cooldogedev\libSQL` folder in your `src` directory.
-
 ## Examples
 
 ### Retrieve all customer records
@@ -111,6 +84,35 @@ $pool->submit($query, "customers",
     )
 );
 ```
+
+### Installation via DEVirion
+
+> This is only for development purposes, [read this](https://github.com/cooldogedev/libSQL/issues/3).
+
+Install the [DEVirion](https://poggit.pmmp.io/ci/poggit/devirion/DEVirion) plugin and start your server. This will create a `virions` folder in your server's root directory.
+
+```
+server_root
+| -> plugins
+|    --> DEVirion.phar
+| -> virions
+```
+
+- Download pre-compiled `.phar` files can be downloaded from [poggit](https://poggit.pmmp.io/ci/cooldogedev/libSQL/libSQL).
+- Place the pre-compiled `.phar` in the `virions` directory
+
+### Running from source code
+
+Clone the repository via git `git clone git@github.com:cooldogedev/libSQL.git`. This will create a `libSQL` folder in your directory.
+
+```
+your_plugin
+| -> src
+|    --> cooldogedev
+|       --> libSQL
+```
+
+- Place the `cooldogedev\libSQL` folder in your `src` directory.
 
 ### Projects using libSQL
 - [BedrockEconomy](https://github.com/cooldogedev/BedrockEconomy)
