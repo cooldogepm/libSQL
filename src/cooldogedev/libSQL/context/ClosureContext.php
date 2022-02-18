@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021 cooldogedev
+ *  Copyright (c) 2021-2022 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -68,7 +68,7 @@ final class ClosureContext extends Threaded
         return $this;
     }
 
-    public function invoke(mixed $response): void
+    public function invoke(mixed $response, ?string $error): void
     {
         $this->setRunning(true);
 
@@ -77,7 +77,8 @@ final class ClosureContext extends Threaded
         if ($first) {
             $newValue = $first(
                 $response,
-                fn() => $this->setRunning(false)
+                fn() => $this->setRunning(false),
+                $error
             );
 
             if ($newValue !== null && $newValue !== $response) {
@@ -95,7 +96,8 @@ final class ClosureContext extends Threaded
             }
             $newValue = $closure(
                 $response,
-                fn() => $this->setRunning(false)
+                fn() => $this->setRunning(false),
+                $error
             );
             if ($newValue !== null && $newValue !== $response) {
                 $response = $newValue;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021 cooldogedev
+ *  Copyright (c) 2021-2022 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,13 @@ abstract class SQLQuery extends Threaded
     ];
 
     protected ?ClosureContext $closureContext = null;
+
     protected ?string $table = null;
+
+    protected ?string $error = null;
+
     protected bool $finished = false;
+
     protected mixed $result = null;
     protected bool $serialized = false;
 
@@ -95,5 +100,20 @@ abstract class SQLQuery extends Threaded
     public function setTable(?string $table): void
     {
         $this->table = $table;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->error !== null;
+    }
+
+    public function getError(): ?string
+    {
+        return $this->error;
+    }
+
+    public function setError(?string $error): void
+    {
+        $this->error = $error;
     }
 }
