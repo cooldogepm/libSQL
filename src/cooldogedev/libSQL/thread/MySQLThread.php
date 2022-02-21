@@ -46,22 +46,23 @@ final class MySQLThread extends SQLThread implements MySQLCredentialsHolder
 
     public function executeQuery(SQLQuery $query): void
     {
-        $connection = new mysqli($this->host, $this->username, $this->password, $this->schema, $this->port);
-
-        while (!$connection->ping()) {
-            $this->reconnect($connection);
-        }
-
         try {
+            $connection = new mysqli($this->host, $this->username, $this->password, $this->schema, $this->port);
+
+            while (!$connection->ping()) {
+                $this->reconnect($connection);
+            }
+
             $query->onRun($connection);
-        } catch (Throwable $e) {
-            $query->setError($e->getMessage());
-        } finally {
+
             $query->setFinished(true);
 
             $connection->close();
 
             $this->getSleeperNotifier()->wakeupSleeper();
+
+        } catch (Throwable $e) {
+            $query->setError($e->getMessage());
         }
     }
 
