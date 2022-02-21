@@ -29,7 +29,7 @@ namespace cooldogedev\libSQL\context;
 use Closure;
 use Threaded;
 
-final class ClosureContext extends Threaded
+class ClosureContext extends Threaded
 {
     protected const CLOSURE_CONTEXT_KEY = "CONTEXT";
 
