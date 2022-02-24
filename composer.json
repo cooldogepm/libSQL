@@ -1,0 +1,14 @@
+{
+    "name": "cooldogedev/libsql",
+    "description": "A minimalistic implementation of asynchronous SQL",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "cooldogedev",
+            "email": "developmentdoge@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}

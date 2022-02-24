@@ -3,3 +3,4 @@
 !.idea/codeStyles/
 !.idea/fileTemplates/
 nbproject/*
+/vendor/
