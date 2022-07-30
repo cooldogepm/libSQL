@@ -100,3 +100,4 @@ your_plugin
 
 ### Projects using libSQL
 - [BedrockEconomy](https://github.com/cooldogedev/BedrockEconomy)
+- [TNTTag](https://github.com/cooldogedev/TNTTag)
