@@ -85,7 +85,6 @@ abstract class SQLThread extends Thread
         $this->synchronized(
             function (): void {
                 $this->setRunning(false);
-                $this->quit();
                 $this->notify();
             }
         );
