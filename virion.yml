@@ -1,7 +1,5 @@
 name: libSQL
-antigen: cooldogedev\libSQL
-api: [ 4.0.0 ]
 author: cooldogedev
-description: A minimalistic implementation of asynchronous SQL
-php: [ 8.0 ]
-version: 0.1.2
+antigen: cooldogedev\libSQL
+api: [ 5.0.0 ]
+version: 0.2.0

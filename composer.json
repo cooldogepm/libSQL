@@ -6,9 +6,14 @@
     "authors": [
         {
             "name": "cooldogedev",
-            "email": "developmentdoge@gmail.com"
+            "email": "cooldogedev@gmail.com"
         }
     ],
     "minimum-stability": "stable",
-    "require": {}
+    "require": {
+      "ext-pmmpthread": "*",
+      "ext-sqlite3": "*",
+      "ext-mysqli": "*",
+      "ext-igbinary": "*"
+    }
 }

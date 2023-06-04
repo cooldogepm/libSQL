@@ -24,50 +24,67 @@
 
 declare(strict_types=1);
 
-namespace cooldogedev\libSQL\thread;
+namespace cooldogedev\libSQL\exception;
 
-use mysqli;
-use RuntimeException;
+use Exception;
 
-final class MySQLThread extends SQLThread
+final class SQLException extends Exception
 {
-    protected static ?mysqli $connection = null;
-
     public function __construct(
-        protected string $host,
-        protected string $username,
-        protected string $password,
-        protected string $database,
+        protected array $_trace,
 
-        protected int $port,
+        protected string $_traceAsString,
+
+        protected string $_message,
+        protected string $_file,
+
+        protected int $_code = 0,
+        protected int $_line = 0,
     ) {
-        parent::__construct();
+        parent::__construct($this->_message, $this->_code);
     }
 
-    protected function reconnect(): void
+    public function _getMessage(): string
     {
-        self::$connection = new mysqli($this->host, $this->username, $this->password, $this->database, $this->port);
-
-        if (self::$connection->connect_error) {
-            throw new RuntimeException(self::$connection->connect_error, self::$connection->connect_errno);
-        }
+        return $this->_message;
     }
 
-    protected function onRun(): void
+    public function _getCode(): int
     {
-        if (self::$connection === null || !self::$connection->ping()) {
-            $this->reconnect();
-        }
-
-        parent::onRun();
+        return $this->_code;
     }
 
-    public function getConnection(): mysqli
+    public function _getTrace(): array
     {
-        if (self::$connection === null || !self::$connection->ping()) {
-            $this->reconnect();
-        }
+        return $this->_trace;
+    }
 
-        return self::$connection;
+    public function _getFile(): string
+    {
+        return $this->_file;
+    }
+
+    public function _getLine(): int
+    {
+        return $this->_line;
+    }
+
+    public function _getTraceAsString(): string
+    {
+        return $this->_traceAsString;
+    }
+
+    public static function fromArray(array $exception): SQLException
+    {
+        return new SQLException(
+            _trace: $exception["trace"],
+            _traceAsString: $exception["trace_string"],
+
+            _message: $exception["message"],
+
+            _file: $exception["file"],
+            _code: $exception["code"],
+            _line: $exception["line"],
+        );
     }
 }

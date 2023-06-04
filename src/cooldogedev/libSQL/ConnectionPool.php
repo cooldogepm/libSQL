@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021-2022 cooldogedev
+ *  Copyright (c) 2021-2023 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,158 +26,85 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL;
 
-use cooldogedev\libSQL\context\ClosureContext;
+use Closure;
+use cooldogedev\libSQL\exception\SQLException;
 use cooldogedev\libSQL\query\SQLQuery;
 use cooldogedev\libSQL\thread\MySQLThread;
 use cooldogedev\libSQL\thread\SQLiteThread;
 use cooldogedev\libSQL\thread\SQLThread;
-use InvalidArgumentException;
 use pocketmine\plugin\PluginBase;
-use pocketmine\snooze\SleeperNotifier;
+use pocketmine\utils\SingletonTrait;
+use function json_decode;
+use function spl_object_id;
+use function usort;
 
 final class ConnectionPool
 {
-    public const DATA_PROVIDER_MYSQL = "mysql";
-    public const DATA_PROVIDER_SQLITE = "sqlite";
+    use SingletonTrait;
+
+    protected array $completionHandlers = [];
 
     /**
-     * @var SQLThread[]
+     * @var array<int, SQLThread>
      */
-    protected array $threads;
-    /**
-     * @var SQLQuery[][]
-     */
-    protected array $refs;
+    protected array $threads = [];
 
-    public function __construct(protected PluginBase $plugin, array $databaseConfig)
+    public function __construct(protected PluginBase $plugin, array $configuration)
     {
-        $this->threads = [];
-        $this->refs = [];
+        self::setInstance($this);
 
-        switch ($databaseConfig["provider"]) {
-            case ConnectionPool::DATA_PROVIDER_MYSQL:
-                for ($i = 0; $i < $databaseConfig["threads"]; $i++) {
-                    $sleeperNotifier = new SleeperNotifier();
-                    $this->registerThread(new MySQLThread($sleeperNotifier, $i, $databaseConfig["mysql"]), $sleeperNotifier);
+        $isMySQL = $configuration["provider"] === "mysql";
+
+        for ($i = 0; $i < $configuration["threads"]; $i++) {
+            $thread = $isMySQL ?
+                new MySQLThread(... $configuration["mysql"]) :
+                new SQLiteThread($plugin->getDataFolder() . $configuration["sqlite"]["path"])
+            ;
+
+            $sleeperHandlerEntry = $this->plugin->getServer()->getTickSleeper()->addNotifier(
+                function () use ($thread): void {
+                    /**
+                     * @var SQLQuery $query
+                     */
+                    while ($query = $thread->getCompleteQueries()->shift()) {
+                        $identifier = spl_object_id($query);
+
+                        [$successHandler, $errorHandler] = $this->completionHandlers[$identifier];
+
+                        $exception = $query->getError() !== null ? SQLException::fromArray(json_decode($query->getError(), true)) : null;
+
+                        match (true) {
+                            $exception === null && $successHandler !== null => $successHandler($query->getResult()),
+                            $exception !== null && $errorHandler !== null => $errorHandler($exception),
+
+                            default => $this->plugin->getLogger()->logException($exception),
+                        };
+
+                        unset($this->completionHandlers[$identifier]);
+                    }
                 }
-                break;
-            case ConnectionPool::DATA_PROVIDER_SQLITE:
-                for ($i = 0; $i < $databaseConfig["threads"]; $i++) {
-                    $sleeperNotifier = new SleeperNotifier();
-                    $this->registerThread(new SQLiteThread($sleeperNotifier, $i, $databaseConfig["sqlite"]["file"], $this->getPlugin()->getDataFolder()), $sleeperNotifier);
-                }
-                break;
-            default:
-                throw new InvalidArgumentException("Invalid database provider");
+            );
+
+            $thread->setSleeperHandlerEntry($sleeperHandlerEntry);
+            $thread->start();
+
+            $this->threads[] = $thread;
         }
     }
 
-    protected function registerThread(SQLThread $thread, SleeperNotifier $sleeperNotifier): void
+    public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $this->getPlugin()->getServer()->getTickSleeper()->addNotifier($sleeperNotifier, function () use ($thread): void {
+        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail];
 
-            foreach ($this->getRefs($thread->getIndex()) as $key => $ref) {
-
-                if (!$ref->isFinished()) {
-                    continue;
-                }
-
-                $context = $ref->getClosureContext();
-
-                $thread->removeQuery($key);
-
-                $context?->invoke($ref->getResult(), $ref->getError());
-
-                $this->removeRef($thread->getIndex(), $key);
-            }
-        });
-
-        $this->threads[$thread->getIndex()] = $thread;
-        $thread->start();
+        $this->getLeastBusyThread()->addQuery($query);
     }
 
-    public function getPlugin(): PluginBase
+    protected function getLeastBusyThread(): SQLThread
     {
-        return $this->plugin;
-    }
+        $threads = $this->threads;
 
-    /**
-     * @return SQLQuery[]
-     */
-    public function getRefs(int $index): array
-    {
-        return $this->refs[$index];
-    }
+        usort($threads, static fn (SQLThread $a, SQLThread $b) => $a->getQueries()->count() <=> $b->getQueries()->count());
 
-    public function removeRef(int $thread, int $index): bool
-    {
-        if (!$this->isRef($thread, $index)) {
-            return false;
-        }
-        unset($this->refs[$thread][$index]);
-        return true;
-    }
-
-    public function isRef(int $thread, int $index): bool
-    {
-        return isset($this->refs[$thread][$index]);
-    }
-
-    public function getRef(int $thread, int $index): ?SQLQuery
-    {
-        return $this->refs[$thread][$index] ?? null;
-    }
-
-    public function submit(SQLQuery $query, ?string $table = null, ?ClosureContext $context = null): ?SQLQuery
-    {
-        $table && $query->setTable($table);
-        $context && $query->setClosureContext($context);
-
-        $thread = $this->getFreeThread();
-
-        $this->addRef($thread->getIndex(), $query);
-        $thread->submitQuery($query);
-
-        return $query;
-    }
-
-    public function getFreeThread(): SQLThread
-    {
-        if (count($this->getThreads()) < 2) {
-            return $this->getThreads()[array_key_first($this->getThreads())];
-        }
-
-        $freeThread = null;
-
-        foreach ($this->getThreads() as $thread) {
-            if (!$thread->isBusy()) {
-                $freeThread = $thread;
-                break;
-            }
-
-            if (!$freeThread) {
-                $freeThread = $thread;
-                continue;
-            }
-
-            if (count($freeThread->getQueries()) > count($thread->getQueries())) {
-                $freeThread = $thread;
-            }
-        }
-
-        return $freeThread;
-    }
-
-    /**
-     * @return SQLThread[]
-     */
-    public function getThreads(): array
-    {
-        return $this->threads;
-    }
-
-    public function addRef(int $thread, SQLQuery $query): void
-    {
-        $this->refs[$thread][] = $query;
+        return $threads[0];
     }
 }

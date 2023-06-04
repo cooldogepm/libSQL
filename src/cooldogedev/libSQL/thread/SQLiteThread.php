@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021-2022 cooldogedev
+ *  Copyright (c) 2021-2023 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,40 +26,38 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\thread;
 
-use cooldogedev\libSQL\interfaces\SQLiteFileHolder;
-use cooldogedev\libSQL\query\SQLQuery;
-use cooldogedev\libSQL\traits\SQLiteFileHolderTrait;
-use pocketmine\snooze\SleeperNotifier;
 use SQLite3;
-use Throwable;
 
-final class SQLiteThread extends SQLThread implements SQLiteFileHolder
+final class SQLiteThread extends SQLThread
 {
-    use SQLiteFileHolderTrait;
+    protected static ?SQLite3 $connection = null;
 
-    public function __construct(SleeperNotifier $sleeperNotifier, int $index, string $file, string $path)
+    public function __construct(protected string $databasePath)
     {
-        parent::__construct($sleeperNotifier, $index);
-        $this->setPath($path);
-        $this->setFile($file);
+        parent::__construct();
     }
 
-    public function executeQuery(SQLQuery $query): void
+    public function reconnect(): void
     {
-        $connection = new SQLite3($this->getPath() . $this->getFile());
-        $connection->busyTimeout(60000);
+        self::$connection = new SQLite3($this->databasePath);
+        self::$connection->busyTimeout(60000);
+    }
 
-        try {
-            $query->onRun($connection);
-        } catch (Throwable $e) {
-            $query->setFinished(true);
-            $query->setError($e->getMessage());
-        } finally {
-            $query->setFinished(true);
-
-            $connection->close();
-
-            $this->getSleeperNotifier()->wakeupSleeper();
+    protected function onRun(): void
+    {
+        if (self::$connection === null) {
+            $this->reconnect();
         }
+
+        parent::onRun();
+    }
+
+    public function getConnection(): SQLite3
+    {
+        if (self::$connection === null) {
+            $this->reconnect();
+        }
+
+        return self::$connection;
     }
 }

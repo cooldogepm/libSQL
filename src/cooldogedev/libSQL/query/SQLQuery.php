@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021-2022 cooldogedev
+ *  Copyright (c) 2021-2023 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,94 +26,66 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\query;
 
-use cooldogedev\libSQL\context\ClosureContext;
-use Threaded;
+use Closure;
+use cooldogedev\libSQL\ConnectionPool;
+use cooldogedev\libSQL\thread\SQLThread;
+use pmmp\thread\Thread as NativeThread;
+use pmmp\thread\ThreadSafe;
+use Throwable;
+use function assert;
+use function igbinary_serialize;
+use function igbinary_unserialize;
+use function is_scalar;
 
-abstract class SQLQuery extends Threaded
+abstract class SQLQuery extends ThreadSafe
 {
-    public const SERIALIZABLE_DATA_TYPES = [
-        "array" => true,
-        "object" => true,
-    ];
-
-    protected ?ClosureContext $closureContext = null;
-
-    protected ?string $table = null;
-
     protected ?string $error = null;
 
-    protected bool $finished = false;
-
     protected mixed $result = null;
-    protected bool $serialized = false;
+    protected bool $resultSerialized = false;
 
-    public function getClosureContext(): ?ClosureContext
+    final public function run(): void
     {
-        return $this->closureContext;
-    }
-
-    public function setClosureContext(?ClosureContext $closureContext): void
-    {
-        $this->closureContext = $closureContext;
-    }
-
-    public function isFinished(): bool
-    {
-        return $this->finished;
-    }
-
-    public function setFinished(bool $finished): void
-    {
-        $this->finished = $finished;
-    }
-
-    public function getResult(): mixed
-    {
-        return $this->isSerialized() ? unserialize($this->result) : $this->result;
-    }
-
-    public function setResult(mixed $result): void
-    {
-        if (isset(SQLQuery::SERIALIZABLE_DATA_TYPES[gettype($result)])) {
-            $this->result = serialize($result);
-            $this->setSerialized(true);
-        } else {
-            $this->result = $result;
+        try {
+            $this->onRun($this->getThread()->getConnection());
+        } catch (Throwable $throwable) {
+            $this->error = json_encode([
+                "message" => $throwable->getMessage(),
+                "code" => $throwable->getCode(),
+                "trace" => $throwable->getTrace(),
+                "trace_string" => $throwable->getTraceAsString(),
+                "file" => $throwable->getFile(),
+                "line" => $throwable->getLine(),
+            ]);
         }
     }
 
-    public function isSerialized(): bool
+    final public function getResult(): mixed
     {
-        return $this->serialized;
+        return $this->resultSerialized ? igbinary_unserialize($this->result) : $this->result;
     }
 
-    public function setSerialized(bool $serialized): void
+    final protected function setResult(mixed $result): void
     {
-        $this->serialized = $serialized;
+        $this->resultSerialized = !is_scalar($result) && !$result instanceof ThreadSafe;
+        $this->result = $this->resultSerialized ? igbinary_serialize($result) : $result;
     }
 
-    public function getTable(): ?string
-    {
-        return $this->table;
-    }
-
-    public function setTable(?string $table): void
-    {
-        $this->table = $table;
-    }
-
-    public function isFailed(): bool
-    {
-        return $this->error !== null;
-    }
-
-    public function getError(): ?string
+    final public function getError(): ?string
     {
         return $this->error;
     }
 
-    public function setError(?string $error): void
+    public function getThread(): SQLThread
     {
-        $this->error = $error;
+        $worker = NativeThread::getCurrentThread();
+        assert($worker instanceof SQLThread);
+
+        return $worker;
+    }
+
+    final public function execute(?Closure $onSuccess = null, ?Closure $onFail = null): void
+    {
+        ConnectionPool::getInstance()->submit($this, $onSuccess, $onFail);
     }
 }

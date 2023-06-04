@@ -1,7 +1,7 @@
 <?php
 
 /**
- *  Copyright (c) 2021-2022 cooldogedev
+ *  Copyright (c) 2021-2023 cooldogedev
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,19 @@ declare(strict_types=1);
 
 namespace cooldogedev\libSQL\query;
 
+use cooldogedev\libSQL\thread\SQLiteThread;
+use cooldogedev\libSQL\thread\SQLThread;
 use SQLite3;
 
 abstract class SQLiteQuery extends SQLQuery
 {
+    /**
+     * @return SQLiteThread
+     */
+    final public function getThread(): SQLThread
+    {
+        return parent::getThread();
+    }
+
     abstract public function onRun(SQLite3 $connection): void;
 }
