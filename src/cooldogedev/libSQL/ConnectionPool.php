@@ -75,9 +75,11 @@ final class ConnectionPool
 
                         match (true) {
                             $exception === null && $successHandler !== null => $successHandler($query->getResult()),
-                            $exception !== null && $errorHandler !== null => $errorHandler($exception),
 
-                            default => $this->plugin->getLogger()->logException($exception),
+                            $exception !== null && $errorHandler !== null => $errorHandler($exception),
+                            $exception !== null => $this->plugin->getLogger()->logException($exception),
+
+                            default => null,
                         };
 
                         unset($this->completionHandlers[$identifier]);
