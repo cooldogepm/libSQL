@@ -40,8 +40,14 @@ use function usort;
 
 final class ConnectionPool
 {
-    use SingletonTrait;
+    use SingletonTrait {
+        reset as protected;
+        setInstance as protected;
+    }
 
+    /**
+     * @var array<int, array{Closure, Closure, SQLQuery}>
+     */
     protected array $completionHandlers = [];
 
     /**
@@ -64,26 +70,30 @@ final class ConnectionPool
             $sleeperHandlerEntry = $this->plugin->getServer()->getTickSleeper()->addNotifier(
                 function () use ($thread): void {
                     /**
-                     * @var SQLQuery $query
+                     * @var SQLQuery|null $query
                      */
-                    while ($query = $thread->getCompleteQueries()->shift()) {
-                        $identifier = spl_object_id($query);
+                    $query = $thread->getCompleteQueries()->shift();
 
-                        [$successHandler, $errorHandler] = $this->completionHandlers[$identifier];
-
-                        $exception = $query->getError() !== null ? SQLException::fromArray(json_decode($query->getError(), true)) : null;
-
-                        match (true) {
-                            $exception === null && $successHandler !== null => $successHandler($query->getResult()),
-
-                            $exception !== null && $errorHandler !== null => $errorHandler($exception),
-                            $exception !== null => $this->plugin->getLogger()->logException($exception),
-
-                            default => null,
-                        };
-
-                        unset($this->completionHandlers[$identifier]);
+                    if ($query === null) {
+                        return;
                     }
+
+                    $identifier = spl_object_id($query);
+
+                    [$successHandler, $errorHandler] = $this->completionHandlers[$identifier];
+
+                    $exception = $query->getError() !== null ? SQLException::fromArray(json_decode($query->getError(), true)) : null;
+
+                    match (true) {
+                        $exception === null && $successHandler !== null => $successHandler($query->getResult()),
+
+                        $exception !== null && $errorHandler !== null => $errorHandler($exception),
+                        $exception !== null => $this->plugin->getLogger()->logException($exception),
+
+                        default => null,
+                    };
+
+                    unset($this->completionHandlers[$identifier]);
                 }
             );
 
@@ -96,7 +106,7 @@ final class ConnectionPool
 
     public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail];
+        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail, $query];
 
         $this->getLeastBusyThread()->addQuery($query);
     }
