@@ -78,11 +78,12 @@ final class ConnectionPool
                         return;
                     }
 
+                    $error = $query->getError() !== null ? json_decode($query->getError(), true) : null;
+                    $exception = $error !== null ? SQLException::fromArray($error) : null;
+
                     $identifier = spl_object_id($query);
 
                     [$successHandler, $errorHandler] = $this->completionHandlers[$identifier];
-
-                    $exception = $query->getError() !== null ? SQLException::fromArray(json_decode($query->getError(), true)) : null;
 
                     match (true) {
                         $exception === null && $successHandler !== null => $successHandler($query->getResult()),

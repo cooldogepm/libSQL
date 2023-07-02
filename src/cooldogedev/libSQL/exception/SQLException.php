@@ -74,9 +74,11 @@ class SQLException extends Exception
         return $this->_traceAsString;
     }
 
-    public static function fromArray(array $exception): self
+    public static function fromArray(array $exception): SQLException
     {
-        return new self(
+        $class = $exception["class"] ?? SQLException::class;
+
+        return $class(
             _trace: $exception["trace"],
             _traceAsString: $exception["trace_string"],
 

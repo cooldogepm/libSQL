@@ -28,6 +28,7 @@ namespace cooldogedev\libSQL\query;
 
 use Closure;
 use cooldogedev\libSQL\ConnectionPool;
+use cooldogedev\libSQL\exception\SQLException;
 use cooldogedev\libSQL\thread\SQLThread;
 use pmmp\thread\Thread as NativeThread;
 use pmmp\thread\ThreadSafe;
@@ -56,6 +57,7 @@ abstract class SQLQuery extends ThreadSafe
                 "trace_string" => $throwable->getTraceAsString(),
                 "file" => $throwable->getFile(),
                 "line" => $throwable->getLine(),
+                "class" => $throwable instanceof SQLException ? $throwable::class : null
             ]);
         }
     }
