@@ -28,7 +28,7 @@ namespace cooldogedev\libSQL\exception;
 
 use Exception;
 
-final class SQLException extends Exception
+class SQLException extends Exception
 {
     public function __construct(
         protected array $_trace,
@@ -74,9 +74,9 @@ final class SQLException extends Exception
         return $this->_traceAsString;
     }
 
-    public static function fromArray(array $exception): SQLException
+    public static function fromArray(array $exception): self
     {
-        return new SQLException(
+        return new self(
             _trace: $exception["trace"],
             _traceAsString: $exception["trace_string"],
 
