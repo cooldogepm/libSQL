@@ -77,7 +77,7 @@ class SQLException extends Exception
     {
         $class = $exception["class"] ?? SQLException::class;
 
-        return $class(
+        return new $class(
             _trace: $exception["trace"],
             _traceAsString: $exception["trace_string"],
 
