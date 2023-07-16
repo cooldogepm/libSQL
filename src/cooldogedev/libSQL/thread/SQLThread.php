@@ -54,15 +54,19 @@ abstract class SQLThread extends Thread
 
         while ($this->running) {
             $this->synchronized(
-                function (): void {
-                    while ($this->running && $this->queries->count() < 0) {
+                function () use ($notifier): void {
+                    if ($this->running && $this->queries->count() === 0 && $this->completeQueries->count() === 0) {
                         $this->wait();
                     }
                 }
             );
 
+            if ($this->completeQueries->count() !== 0) {
+                $notifier->wakeupSleeper();
+            }
+
             /**
-             * @var SQLQuery $query
+             * @var SQLQuery|null $query
              */
             $query = $this->queries->shift();
 
@@ -73,8 +77,6 @@ abstract class SQLThread extends Thread
             $query->run();
 
             $this->completeQueries[] = $query;
-
-            $notifier->wakeupSleeper();
         }
     }
 
