@@ -54,7 +54,7 @@ abstract class SQLThread extends Thread
 
         while ($this->running) {
             $this->synchronized(
-                function () use ($notifier): void {
+                function (): void {
                     if ($this->running && $this->queries->count() === 0 && $this->completeQueries->count() === 0) {
                         $this->wait();
                     }
