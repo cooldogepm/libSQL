@@ -15,5 +15,11 @@
       "ext-sqlite3": "*",
       "ext-mysqli": "*",
       "ext-igbinary": "*"
+    },
+    "extra": {
+      "virion": {
+        "spec": "3.1",
+        "namespace-root": "cooldogedev\\libSQL"
+      }
     }
 }
