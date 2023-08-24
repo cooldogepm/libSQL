@@ -46,7 +46,7 @@ final class ConnectionPool
     }
 
     /**
-     * @var array<int, array{Closure, Closure, SQLQuery}>
+     * @var array<int, array{Closure, Closure}>
      */
     protected array $completionHandlers = [];
 
@@ -107,7 +107,7 @@ final class ConnectionPool
 
     public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail, $query];
+        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail];
 
         $this->getLeastBusyThread()->addQuery($query);
     }
