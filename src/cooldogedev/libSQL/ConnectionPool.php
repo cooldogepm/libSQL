@@ -81,9 +81,7 @@ final class ConnectionPool
                     $error = $query->getError() !== null ? json_decode($query->getError(), true) : null;
                     $exception = $error !== null ? SQLException::fromArray($error) : null;
 
-                    $identifier = spl_object_id($query);
-
-                    [$successHandler, $errorHandler] = $this->completionHandlers[$identifier];
+                    [$successHandler, $errorHandler] = $this->completionHandlers[$query->getIdentifier()];
 
                     match (true) {
                         $exception === null && $successHandler !== null => $successHandler($query->getResult()),
@@ -94,7 +92,7 @@ final class ConnectionPool
                         default => null,
                     };
 
-                    unset($this->completionHandlers[$identifier]);
+                    unset($this->completionHandlers[$query->getIdentifier()]);
                 }
             );
 
@@ -107,7 +105,9 @@ final class ConnectionPool
 
     public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $this->completionHandlers[spl_object_id($query)] = [$onSuccess, $onFail];
+        $query->setIdentifier(spl_object_id($query));
+
+        $this->completionHandlers[$query->getIdentifier()] = [$onSuccess, $onFail];
 
         $this->getLeastBusyThread()->addQuery($query);
     }
