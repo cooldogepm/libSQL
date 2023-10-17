@@ -40,7 +40,7 @@ use function is_scalar;
 
 abstract class SQLQuery extends ThreadSafe
 {
-    protected int $identifier;
+    protected int $identifier = -1;
 
     protected ?string $error = null;
 
