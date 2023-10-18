@@ -10,9 +10,7 @@
     }
   ],
   "autoload": {
-    "psr-4": {
-      "cooldogedev\\libSQL\\": "src/cooldogedev/libSQL"
-    }
+    "classmap": ["src"]
   },
   "minimum-stability": "stable",
   "require": {
