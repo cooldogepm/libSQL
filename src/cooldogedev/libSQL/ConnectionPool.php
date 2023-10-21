@@ -34,7 +34,10 @@ use cooldogedev\libSQL\thread\SQLiteThread;
 use cooldogedev\libSQL\thread\SQLThread;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
+use function bin2hex;
+use function implode;
 use function json_decode;
+use function microtime;
 use function spl_object_hash;
 use function usort;
 
@@ -105,7 +108,14 @@ final class ConnectionPool
 
     public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $query->setIdentifier(spl_object_hash($query));
+        $identifier = [
+            spl_object_hash($query),
+            microtime(),
+            count($this->threads),
+            count($this->completionHandlers),
+        ];
+
+        $query->setIdentifier(bin2hex(implode("", $identifier)));
 
         $this->completionHandlers[$query->getIdentifier()] = [$onSuccess, $onFail];
 
