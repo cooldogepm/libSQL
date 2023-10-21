@@ -35,7 +35,7 @@ use cooldogedev\libSQL\thread\SQLThread;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\SingletonTrait;
 use function json_decode;
-use function spl_object_id;
+use function spl_object_hash;
 use function usort;
 
 final class ConnectionPool
@@ -46,7 +46,7 @@ final class ConnectionPool
     }
 
     /**
-     * @var array<int, array{Closure, Closure}>
+     * @var array<string, array{Closure, Closure}>
      */
     protected array $completionHandlers = [];
 
@@ -105,7 +105,7 @@ final class ConnectionPool
 
     public function submit(SQLQuery $query, ?Closure $onSuccess = null, ?Closure $onFail = null): void
     {
-        $query->setIdentifier(spl_object_id($query));
+        $query->setIdentifier(spl_object_hash($query));
 
         $this->completionHandlers[$query->getIdentifier()] = [$onSuccess, $onFail];
 

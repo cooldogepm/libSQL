@@ -40,19 +40,19 @@ use function is_scalar;
 
 abstract class SQLQuery extends ThreadSafe
 {
-    protected int $identifier = -1;
+    protected string $identifier = "";
 
     protected ?string $error = null;
 
     protected mixed $result = null;
     protected bool $resultSerialized = false;
 
-    public function getIdentifier(): int
+    public function getIdentifier(): string
     {
         return $this->identifier;
     }
 
-    public function setIdentifier(int $identifier): void
+    public function setIdentifier(string $identifier): void
     {
         $this->identifier = $identifier;
     }
