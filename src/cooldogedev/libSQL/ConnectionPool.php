@@ -84,7 +84,7 @@ final class ConnectionPool
                     $error = $query->getError() !== null ? json_decode($query->getError(), true) : null;
                     $exception = $error !== null ? SQLException::fromArray($error) : null;
 
-                    [$successHandler, $errorHandler] = $this->completionHandlers[$query->getIdentifier()];
+                    [$successHandler, $errorHandler] = $this->completionHandlers[$query->getIdentifier()] ?? [null, null];
 
                     match (true) {
                         $exception === null && $successHandler !== null => $successHandler($query->getResult()),
@@ -95,13 +95,14 @@ final class ConnectionPool
                         default => null,
                     };
 
-                    unset($this->completionHandlers[$query->getIdentifier()]);
+                    if (isset($this->completionHandlers[$query->getIdentifier()])) {
+                        unset($this->completionHandlers[$query->getIdentifier()]);
+                    }
                 }
             );
 
             $thread->setSleeperHandlerEntry($sleeperHandlerEntry);
             $thread->start();
-
             $this->threads[] = $thread;
         }
     }
@@ -116,18 +117,14 @@ final class ConnectionPool
         ];
 
         $query->setIdentifier(bin2hex(implode("", $identifier)));
-
         $this->completionHandlers[$query->getIdentifier()] = [$onSuccess, $onFail];
-
         $this->getLeastBusyThread()->addQuery($query);
     }
 
     protected function getLeastBusyThread(): SQLThread
     {
         $threads = $this->threads;
-
         usort($threads, static fn (SQLThread $a, SQLThread $b) => $a->getQueries()->count() <=> $b->getQueries()->count());
-
         return $threads[0];
     }
 }
